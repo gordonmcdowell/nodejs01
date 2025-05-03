@@ -1,0 +1,16 @@
+{
+  "name": "NodeJS Starter",
+  "plugins": [
+    {
+      "name": "node"
+    }
+  ],
+  "services": [
+    {
+      "name": "web",
+      "buildCommand": "npm install",
+      "startCommand": "npm start",
+      "env": {}
+    }
+  ]
+}
