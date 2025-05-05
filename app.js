@@ -1,9 +1,10 @@
-// app.js
+// app.js (ES Module + got + yt-dlp-exec fix)
 
 import express from 'express';
 import got from 'got';
-import { ytdlp } from 'yt-dlp-exec';
+import ytDlpExec from 'yt-dlp-exec';
 
+const { ytdlp } = ytDlpExec;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
