@@ -7,7 +7,7 @@ import got from 'got';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Health-check
+// Health check
 app.get('/', (_req, res) => {
   res.send('🎬 YouTube-proxy service is running.');
 });
@@ -20,31 +20,29 @@ app.get('/stream', async (req, res) => {
   }
 
   try {
-    // 1) Fetch video info & select the best progressive MP4
+    // 1) Get video info and pick a progressive MP4 format
     const info = await ytdl.getInfo(videoUrl);
     const format = ytdl.chooseFormat(info.formats, {
       filter: f => f.hasVideo && f.hasAudio && f.container === 'mp4',
-      quality: 'highest'
+      quality: 'highest',
     });
     const directUrl = format.url;
 
-    // 2) Build upstream headers:
-    //    - Forward Range (seeking)
-    //    - Use a real User-Agent
-    //    - Set Referer to the YouTube page
+    // 2) Build headers: forward Range, set UA + Referer
     const upstreamHeaders = {
       'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0',
       'Referer':    videoUrl,
-      ...(req.headers.range ? { Range: req.headers.range } : {})
+      ...(req.headers.range ? { Range: req.headers.range } : {}),
     };
 
     // 3) Stream from the direct URL
     const upstream = got.stream(directUrl, {
       headers: upstreamHeaders,
-      followRedirect: true
+      followRedirect: true,
+      timeout: { request: 20000 },
     });
 
-    // 4) Forward key headers back to the client
+    // 4) Forward key headers to client
     upstream.on('response', upstreamRes => {
       res.setHeader('Content-Type', upstreamRes.headers['content-type'] || 'video/mp4');
       if (upstreamRes.headers['content-length']) {
@@ -52,20 +50,18 @@ app.get('/stream', async (req, res) => {
       }
       if (upstreamRes.headers['content-range']) {
         res.setHeader('Content-Range', upstreamRes.headers['content-range']);
-        res.status(206); // Partial Content
+        res.status(206);
       }
     });
 
-    // 5) Pipe the video
-    upstream.pipe(res);
-
-    // 6) Handle errors
-    upstream.on('error', err => {
+    // 5) Pipe it, and handle errors
+    upstream.pipe(res).on('error', err => {
       console.error('[stream] upstream error:', err);
-      if (!res.headersSent) {
-        res.status(500).send('❌ Error streaming video');
-      }
+      if (!res.headersSent) res.status(500).send('❌ Error streaming video');
     });
+
+    // 6) Cleanup if client disconnects
+    req.on('close', () => upstream.destroy());
 
   } catch (err) {
     console.error('[stream] error:', err);
