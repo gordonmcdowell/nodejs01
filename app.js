@@ -1,82 +1,76 @@
 // app.js
 
 import express from 'express';
+import ytdl from 'ytdl-core';
 import got from 'got';
-import ytdlp from 'yt-dlp-exec';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// health‐check
+// Health-check
 app.get('/', (_req, res) => {
   res.send('🎬 YouTube-proxy service is running.');
 });
 
-app.get('/stream', async (req, res, next) => {
+// /stream?url=<YouTube URL>
+app.get('/stream', async (req, res) => {
   const videoUrl = req.query.url;
-  console.log(`[stream] incoming URL: ${videoUrl}`);
-  if (!videoUrl) {
-    return res.status(400).send('❌ Missing ?url parameter');
+  if (!videoUrl || !ytdl.validateURL(videoUrl)) {
+    return res.status(400).send('❌ Missing or invalid ?url parameter');
   }
 
   try {
-    // 1) ask yt-dlp for the direct mp4 URL
-    const stdout = await ytdlp(videoUrl, {
-      format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
-      getUrl: true
+    // 1) Fetch video info & select the best progressive MP4
+    const info = await ytdl.getInfo(videoUrl);
+    const format = ytdl.chooseFormat(info.formats, {
+      filter: f => f.hasVideo && f.hasAudio && f.container === 'mp4',
+      quality: 'highest'
     });
-    const directUrl = stdout.trim();
-    console.log('[stream] got directUrl:', directUrl);
+    const directUrl = format.url;
 
-    // 2) build headers for the video fetch
+    // 2) Build upstream headers:
+    //    - Forward Range (seeking)
+    //    - Use a real User-Agent
+    //    - Set Referer to the YouTube page
     const upstreamHeaders = {
       'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0',
       'Referer':    videoUrl,
       ...(req.headers.range ? { Range: req.headers.range } : {})
     };
 
-    // 3) start streaming from Google’s servers
+    // 3) Stream from the direct URL
     const upstream = got.stream(directUrl, {
       headers: upstreamHeaders,
-      followRedirect: true,
-      timeout: { request: 30000 }
+      followRedirect: true
     });
 
+    // 4) Forward key headers back to the client
     upstream.on('response', upstreamRes => {
-      console.log('[stream] upstream status:', upstreamRes.statusCode);
       res.setHeader('Content-Type', upstreamRes.headers['content-type'] || 'video/mp4');
       if (upstreamRes.headers['content-length']) {
         res.setHeader('Content-Length', upstreamRes.headers['content-length']);
       }
       if (upstreamRes.headers['content-range']) {
         res.setHeader('Content-Range', upstreamRes.headers['content-range']);
-        res.status(206);
+        res.status(206); // Partial Content
       }
     });
 
+    // 5) Pipe the video
+    upstream.pipe(res);
+
+    // 6) Handle errors
     upstream.on('error', err => {
       console.error('[stream] upstream error:', err);
-      next(err);
+      if (!res.headersSent) {
+        res.status(500).send('❌ Error streaming video');
+      }
     });
-
-    // if client disconnects, destroy the upstream
-    req.on('close', () => {
-      console.log('[stream] client closed connection');
-      upstream.destroy();
-    });
-
-    upstream.pipe(res);
 
   } catch (err) {
     console.error('[stream] error:', err);
-    res.status(500).send(`❌ Stream error: ${err.message}`);
+    res.status(500).send(`❌ Failed to retrieve video: ${err.message}`);
   }
-});
-
-// catch-all
-app.use((err, _req, res, _next) => {
-  console.error('[error handler]', err);
-  res.status(500).send(`❌ Internal error: ${err.message}`);
 });
 
 app.listen(PORT, () => {
