@@ -9,6 +9,6 @@
   "dependencies": {
     "express": "^4.18.2",
     "got": "^12.6.0",
-    "yt-dlp-exec": "^0.11.5"
+    "yt-dlp-exec": "*"
   }
 }
