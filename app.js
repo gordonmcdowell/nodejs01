@@ -7,13 +7,12 @@ const { ytdlp } = require('yt-dlp-exec');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Root route: simple health check
+// Health-check at "/"
 app.get('/', (_req, res) => {
-  res.send('🎬 YouTube‐proxy service is running.');
+  res.send('🎬 YouTube-proxy service is running.');
 });
 
-// /stream?url=<YouTube URL>
-// Proxies the MP4 stream URL extracted by yt-dlp, forwarding Range headers.
+// Stream-proxy at "/stream?url=<YouTube URL>"
 app.get('/stream', async (req, res, next) => {
   const videoUrl = req.query.url;
   if (!videoUrl) {
@@ -21,22 +20,19 @@ app.get('/stream', async (req, res, next) => {
   }
 
   try {
-    // 1) Extract the direct MP4 URL (best video+audio)
+    // 1) Ask yt-dlp for a direct MP4 URL
     const stdout = await ytdlp(videoUrl, {
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
       getUrl: true
     });
     const directUrl = stdout.trim();
 
-    // 2) Stream it through us, preserving Range for seeking
+    // 2) Proxy that URL, forwarding any Range header
     const upstreamHeaders = {};
-    if (req.headers.range) {
-      upstreamHeaders.Range = req.headers.range;
-    }
+    if (req.headers.range) upstreamHeaders.Range = req.headers.range;
 
     const upstream = got.stream(directUrl, { headers: upstreamHeaders });
     upstream.on('response', upstreamRes => {
-      // Forward relevant headers
       res.setHeader('Content-Type', upstreamRes.headers['content-type'] || 'video/mp4');
       if (upstreamRes.headers['content-length']) {
         res.setHeader('Content-Length', upstreamRes.headers['content-length']);
@@ -55,7 +51,7 @@ app.get('/stream', async (req, res, next) => {
   }
 });
 
-// Global error handler (optional, but helps debug)
+// Catch-all error handler
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('❌ Internal server error');
