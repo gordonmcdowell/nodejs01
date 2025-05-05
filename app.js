@@ -7,69 +7,76 @@ import ytdlp from 'yt-dlp-exec';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Health-check endpoint
+// health‐check
 app.get('/', (_req, res) => {
-  res.send('🎬 YouTube‐proxy service is running.');
+  res.send('🎬 YouTube-proxy service is running.');
 });
 
-// Stream proxy endpoint
 app.get('/stream', async (req, res, next) => {
   const videoUrl = req.query.url;
+  console.log(`[stream] incoming URL: ${videoUrl}`);
   if (!videoUrl) {
-    return res.status(400).send('❌ Missing required query parameter: ?url=');
+    return res.status(400).send('❌ Missing ?url parameter');
   }
 
   try {
-    // 1) Extract the direct MP4 URL from yt-dlp
+    // 1) ask yt-dlp for the direct mp4 URL
     const stdout = await ytdlp(videoUrl, {
       format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
       getUrl: true
     });
     const directUrl = stdout.trim();
+    console.log('[stream] got directUrl:', directUrl);
 
-    // 2) Build headers for the upstream request:
-    //    - Forward client's Range (for seeking)
-    //    - Supply a realistic User-Agent
-    //    - Set Referer to the original YouTube URL
+    // 2) build headers for the video fetch
     const upstreamHeaders = {
       'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0',
-      'Referer':    videoUrl
+      'Referer':    videoUrl,
+      ...(req.headers.range ? { Range: req.headers.range } : {})
     };
-    if (req.headers.range) {
-      upstreamHeaders.Range = req.headers.range;
-    }
 
-    // 3) Stream the video, following redirects
+    // 3) start streaming from Google’s servers
     const upstream = got.stream(directUrl, {
       headers: upstreamHeaders,
-      followRedirect: true
+      followRedirect: true,
+      timeout: { request: 30000 }
     });
 
-    // 4) Forward key response headers to the client
     upstream.on('response', upstreamRes => {
+      console.log('[stream] upstream status:', upstreamRes.statusCode);
       res.setHeader('Content-Type', upstreamRes.headers['content-type'] || 'video/mp4');
       if (upstreamRes.headers['content-length']) {
         res.setHeader('Content-Length', upstreamRes.headers['content-length']);
       }
       if (upstreamRes.headers['content-range']) {
         res.setHeader('Content-Range', upstreamRes.headers['content-range']);
-        res.status(206); // Partial Content
+        res.status(206);
       }
     });
 
-    upstream.on('error', err => next(err));
+    upstream.on('error', err => {
+      console.error('[stream] upstream error:', err);
+      next(err);
+    });
+
+    // if client disconnects, destroy the upstream
+    req.on('close', () => {
+      console.log('[stream] client closed connection');
+      upstream.destroy();
+    });
+
     upstream.pipe(res);
 
   } catch (err) {
-    console.error('Stream error:', err);
-    res.status(500).send('❌ Failed to fetch or proxy video');
+    console.error('[stream] error:', err);
+    res.status(500).send(`❌ Stream error: ${err.message}`);
   }
 });
 
-// Global error handler
+// catch-all
 app.use((err, _req, res, _next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).send('❌ Internal server error');
+  console.error('[error handler]', err);
+  res.status(500).send(`❌ Internal error: ${err.message}`);
 });
 
 app.listen(PORT, () => {
