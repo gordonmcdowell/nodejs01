@@ -6,9 +6,9 @@
   "author": "alphasec",
   "license": "MIT",
   "dependencies": {
-    "express": "^latest",
-    "yt-dlp-exec": "^latest",
-    "got": "^latest"   
+    "express": "*",
+    "yt-dlp-exec": "*",
+    "got": "*"   
   },
   "scripts": {
     "start": "node app.js"
