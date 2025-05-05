@@ -1,12 +1,14 @@
 {
-  "name": "nodejs-app",
-  "version": "1.0.0",
-  "description": "A minimal Node.js web application.",
+  "name": "nodejs01-app",
+  "version": "1.0.1",
+  "description": "A minimal Node.js web application pertaining to YouTube.",
   "main": "app.js",
   "author": "alphasec",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^latest",
+    "yt-dlp-exec": "^latest",
+    "got": "^latest",    
   },
   "scripts": {
     "start": "node app.js"
