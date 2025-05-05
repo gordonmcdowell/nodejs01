@@ -1,19 +1,17 @@
-// app.js (ES Module + static yt-dlp binary)
-
 import express from 'express';
 import got from 'got';
-import { spawn } from 'child_process';
-import ytDlpPath from 'yt-dlp-static';
+import ytDlpExec from 'yt-dlp-exec';
 
+const { ytdlp } = ytDlpExec;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Health-check endpoint
+// Health-check
 app.get('/', (_req, res) => {
   res.send('🎬 YouTube-proxy service is running.');
 });
 
-// Stream proxy endpoint
+// Stream proxy
 app.get('/stream', async (req, res, next) => {
   const videoUrl = req.query.url;
   if (!videoUrl) {
@@ -21,24 +19,12 @@ app.get('/stream', async (req, res, next) => {
   }
 
   try {
-    // Spawn yt-dlp-static to get the direct MP4 URL
-    const args = ['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4', '--get-url', videoUrl];
-    const directUrl = await new Promise((resolve, reject) => {
-      const proc = spawn(ytDlpPath, args);
-      let stdout = '';
-      let stderr = '';
-      proc.stdout.on('data', (chunk) => stdout += chunk);
-      proc.stderr.on('data', (chunk) => stderr += chunk);
-      proc.on('close', (code) => {
-        if (code === 0) {
-          resolve(stdout.trim());
-        } else {
-          reject(new Error(stderr.trim()));
-        }
-      });
+    const stdout = await ytdlp(videoUrl, {
+      format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
+      getUrl: true
     });
+    const directUrl = stdout.trim();
 
-    // Proxy the video stream, forwarding Range headers for seeking
     const headers = {};
     if (req.headers.range) headers.Range = req.headers.range;
 
@@ -62,7 +48,7 @@ app.get('/stream', async (req, res, next) => {
   }
 });
 
-// Global error handler
+// Error handler
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).send('❌ Internal server error');
