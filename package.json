@@ -13,8 +13,5 @@
     "express": "*",
     "yt-dlp-exec": "*",
     "got": "*"   
-  },
-  "scripts": {
-    "start": "node app.js"
   }
 }
