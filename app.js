@@ -44,14 +44,16 @@ app.get('/stream', async (req, res, next) => {
 
   } catch (err) {
     console.error('Stream error:', err);
-    res.status(500).send('❌ Failed to fetch or proxy video');
+    // **TEMPORARY**: send the real error back so we can debug
+    res.status(500).send(`Error: ${err.message}`);
   }
 });
 
 // Error handler
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
-  res.status(500).send('❌ Internal server error');
+  // **TEMPORARY** expose it
+  res.status(500).send(`Unhandled: ${err.message}`);
 });
 
 app.listen(PORT, () => {
