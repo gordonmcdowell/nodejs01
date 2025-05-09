@@ -20,17 +20,24 @@ app.get('/stream', async (req, res, next) => {
   }
 
   try {
-    // 1) ask yt-dlp for the direct MP4 URL
+    // 1) ask yt-dlp for the direct MP4 URL with more options
     const stdout = await ytdlp(videoUrl, {
-      format: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
-      getUrl: true
+      format: 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]',
+      getUrl: true,
+      addHeader: [
+        'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language:en-US,en;q=0.5'
+      ]
     });
     const directUrl = stdout.trim();
 
-    // 2) build headers for the upstream fetch
+    // 2) build headers for the upstream fetch with more realistic headers
     const upstreamHeaders = {
-      'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0',
-      'Referer':    videoUrl,
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Referer': videoUrl,
       ...(req.headers.range ? { Range: req.headers.range } : {})
     };
 
