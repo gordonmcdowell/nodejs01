@@ -37,17 +37,25 @@ app.get('/stream', async (req, res) => {
   }
 
   try {
-    // Request best format available - prioritize MP4
+    // Request best MP4 format - compatible with AVPlayer
     const stdout = await ytdlp(videoUrl, {
-      format: 'best[ext=mp4]/best',  // Changed format string
+      format: 'bestvideo[ext=mp4][protocol^=http]+bestaudio[ext=m4a]/best[ext=mp4]/best',
       getUrl: true,
       addHeader: [
-        'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent:Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
       ]
     });
     
     const directUrl = stdout.trim();
-    res.json({ url: directUrl });
+    
+    // Return URL and suggested headers for AVPlayer
+    res.json({
+      url: directUrl,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
+        'Referer': 'https://www.youtube.com/'
+      }
+    });
 
   } catch (err) {
     console.error('Stream error:', err);
