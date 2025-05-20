@@ -21,7 +21,12 @@ app.get('/formats', async (req, res) => {
 
   try {
     const stdout = await ytdlp(videoUrl, {
-      listFormats: true
+      listFormats: true,
+      addHeader: [
+        'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
+        'X-YouTube-Client-Name:55', // TV Client
+        'X-YouTube-Client-Version:1.0'
+      ]
     });
     res.send(`<pre>${stdout}</pre>`);
   } catch (err) {
@@ -37,23 +42,24 @@ app.get('/stream', async (req, res) => {
   }
 
   try {
-    // Request best MP4 format - compatible with AVPlayer
     const stdout = await ytdlp(videoUrl, {
       format: 'bestvideo[ext=mp4][protocol^=http]+bestaudio[ext=m4a]/best[ext=mp4]/best',
       getUrl: true,
       addHeader: [
-        'User-Agent:Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
+        'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
+        'X-YouTube-Client-Name:55',
+        'X-YouTube-Client-Version:1.0'
       ]
     });
     
     const directUrl = stdout.trim();
     
-    // Return URL and suggested headers for AVPlayer
     res.json({
       url: directUrl,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
-        'Referer': 'https://www.youtube.com/'
+        'User-Agent': 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
+        'X-YouTube-Client-Name': '55',
+        'X-YouTube-Client-Version': '1.0'
       }
     });
 
