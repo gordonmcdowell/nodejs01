@@ -13,6 +13,23 @@ app.get('/', (_req, res) => {
   res.send('🎬 YouTube-proxy service is running.');
 });
 
+app.get('/formats', async (req, res) => {
+  const videoUrl = req.query.url;
+  if (!videoUrl) {
+    return res.status(400).send('❌ Missing required query parameter: ?url=');
+  }
+
+  try {
+    const stdout = await ytdlp(videoUrl, {
+      listFormats: true
+    });
+    res.send(`<pre>${stdout}</pre>`);
+  } catch (err) {
+    console.error('Format list error:', err);
+    res.status(500).send(`❌ Failed to list formats: ${err.message}`);
+  }
+});
+
 app.get('/stream', async (req, res) => {
   const videoUrl = req.query.url;
   if (!videoUrl) {
@@ -20,19 +37,17 @@ app.get('/stream', async (req, res) => {
   }
 
   try {
-    // Request HLS format specifically
+    // Request best format available - prioritize MP4
     const stdout = await ytdlp(videoUrl, {
-      format: 'best[ext=m3u8]/bestaudio[ext=m3u8]',
+      format: 'best[ext=mp4]/best',  // Changed format string
       getUrl: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       ]
     });
     
-    const hlsUrl = stdout.trim();
-    
-    // Return just the URL instead of proxying
-    res.json({ url: hlsUrl });
+    const directUrl = stdout.trim();
+    res.json({ url: directUrl });
 
   } catch (err) {
     console.error('Stream error:', err);
