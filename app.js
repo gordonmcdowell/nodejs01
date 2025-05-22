@@ -24,9 +24,18 @@ app.get('/formats', async (req, res) => {
       listFormats: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
-        'X-YouTube-Client-Name:55', // TV Client
+        'X-YouTube-Client-Name:55',
         'X-YouTube-Client-Version:1.0'
-      ]
+      ],
+      noCheckCertificates: true,
+      noWarnings: true,
+      preferInsecure: true,
+      addHeaders: {
+        'Accept': '*/*',
+        'Origin': 'https://www.youtube.com',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-Mode': 'cors'
+      }
     });
     res.send(`<pre>${stdout}</pre>`);
   } catch (err) {
@@ -45,11 +54,20 @@ app.get('/stream', async (req, res) => {
     const stdout = await ytdlp(videoUrl, {
       format: 'bestvideo[ext=mp4][protocol^=http]+bestaudio[ext=m4a]/best[ext=mp4]/best',
       getUrl: true,
+      noCheckCertificates: true,
+      noWarnings: true,
+      preferInsecure: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
         'X-YouTube-Client-Name:55',
         'X-YouTube-Client-Version:1.0'
-      ]
+      ],
+      addHeaders: {
+        'Accept': '*/*',
+        'Origin': 'https://www.youtube.com',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-Mode': 'cors'
+      }
     });
     
     const directUrl = stdout.trim();
@@ -59,7 +77,9 @@ app.get('/stream', async (req, res) => {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
         'X-YouTube-Client-Name': '55',
-        'X-YouTube-Client-Version': '1.0'
+        'X-YouTube-Client-Version': '1.0',
+        'Accept': '*/*',
+        'Origin': 'https://www.youtube.com'
       }
     });
 
