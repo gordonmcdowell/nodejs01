@@ -51,15 +51,18 @@ app.get('/stream', async (req, res) => {
   }
 
   try {
-    // First try to get HLS stream (m3u8)
+    // Get best MP4 format
     const stdout = await ytdlp(videoUrl, {
-      format: 'best[protocol=m3u8]',
+      format: 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio[ext=m4a]',
       getUrl: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Apple TV; CPU like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148',
         'X-YouTube-Client-Name:55',
         'X-YouTube-Client-Version:1.0'
-      ]
+      ],
+      noCheckCertificates: true,
+      noWarnings: true,
+      preferInsecure: true
     });
     
     const directUrl = stdout.trim();
