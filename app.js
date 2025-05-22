@@ -51,23 +51,15 @@ app.get('/stream', async (req, res) => {
   }
 
   try {
+    // First try to get HLS stream (m3u8)
     const stdout = await ytdlp(videoUrl, {
-      format: 'bestvideo[ext=mp4][protocol^=http]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+      format: 'best[protocol=m3u8]',
       getUrl: true,
-      noCheckCertificates: true,
-      noWarnings: true,
-      preferInsecure: true,
       addHeader: [
-        'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
+        'User-Agent:Mozilla/5.0 (Apple TV; CPU like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148',
         'X-YouTube-Client-Name:55',
         'X-YouTube-Client-Version:1.0'
-      ],
-      addHeaders: {
-        'Accept': '*/*',
-        'Origin': 'https://www.youtube.com',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-Mode': 'cors'
-      }
+      ]
     });
     
     const directUrl = stdout.trim();
@@ -75,11 +67,9 @@ app.get('/stream', async (req, res) => {
     res.json({
       url: directUrl,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Apple TV; CPU like Mac OS X) AppleWebKit/605.1.15',
         'X-YouTube-Client-Name': '55',
-        'X-YouTube-Client-Version': '1.0',
-        'Accept': '*/*',
-        'Origin': 'https://www.youtube.com'
+        'X-YouTube-Client-Version': '1.0'
       }
     });
 
