@@ -4,8 +4,7 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "prestart": "wget https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O ./yt-dlp && chmod +x ./yt-dlp",
-    "start": "node app.js"
+  "prestart": "curl -Lo ./yt-dlp https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp && chmod +x ./yt-dlp",    "start": "node app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
