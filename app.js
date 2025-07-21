@@ -2,8 +2,8 @@
 
 import express from 'express';
 import got from 'got';
-import ytdlp from 'yt-dlp-exec'; // old way just to try compare
-//import { create } from 'yt-dlp-exec'; // This one is local copy and newer
+//import ytdlp from 'yt-dlp-exec'; // old way just to try compare
+import { create } from 'yt-dlp-exec'; // This one is local copy and newer
 
 const ytdlp = create('./yt-dlp'); // Use the local binary from prestart
 const app = express();
