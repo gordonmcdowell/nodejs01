@@ -70,6 +70,8 @@ app.get('/stream', async (req, res) => {
       ],
       noCheckCertificates: true,
       noWarnings: true,
+      cookies: 'cookies.txt',
+
       preferInsecure: true,
       addHeaders: {
         'Accept': '*/*',
