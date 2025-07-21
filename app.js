@@ -103,21 +103,3 @@ app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).send(`❌ Internal error: ${err.message}`);
 });
-
-const updateYtDlp = async () => {
-  try {
-    await ytdlp('', {
-      updateTo: 'nightly'
-    });
-    console.log('✅ yt-dlp updated successfully');
-  } catch (err) {
-    console.error('⚠️ yt-dlp update failed:', err);
-  }
-};
-
-// Update yt-dlp before starting server
-updateYtDlp().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Listening on port ${PORT}`);
-  });
-});
