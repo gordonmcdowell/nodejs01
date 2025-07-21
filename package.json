@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "prestart": "npm install -g yt-dlp"
+    "prestart": "npm install -g --omit=dev yt-dlp"
   },
   "dependencies": {
     "express": "^4.18.2",
