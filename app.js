@@ -2,11 +2,12 @@
 
 import express from 'express';
 import got from 'got';
-import ytdlp from 'yt-dlp-exec';
+//import ytdlp from 'yt-dlp-exec';
+import { create } from 'yt-dlp-exec';
 
+const ytdlp = create('./yt-dlp'); // Use the local binary from prestart
 const app = express();
-// hard‐code 3000 so Railway’s edge proxy lines up
-const PORT = 3000;
+const PORT = 3000; // hard‐code 3000 so Railway’s edge proxy lines up
 
 // Health check
 app.get('/', (_req, res) => {
