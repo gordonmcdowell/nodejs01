@@ -1,5 +1,11 @@
 // app.js
 
+// Create cookies from Railway environment variable
+import fs from 'fs';
+if (process.env.YTDLP_COOKIES) {
+  fs.writeFileSync('./cookies.txt', process.env.YTDLP_COOKIES, 'utf-8');
+}
+
 import express from 'express';
 import got from 'got';
 //import ytdlp from 'yt-dlp-exec'; // old way just to try compare
@@ -22,6 +28,7 @@ app.get('/formats', async (req, res) => {
 
   try {
     const stdout = await ytdlp(videoUrl, {
+      cookies: './cookies.txt',
       listFormats: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
