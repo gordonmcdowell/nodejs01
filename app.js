@@ -28,7 +28,7 @@ app.get('/formats', async (req, res) => {
 
   try {
     const stdout = await ytdlp(videoUrl, {
-      cookies: 'cookies.txt',
+      cookies: './cookies.txt',
       listFormats: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
@@ -70,7 +70,7 @@ app.get('/stream', async (req, res) => {
       ],
       noCheckCertificates: true,
       noWarnings: true,
-      cookies: 'cookies.txt',
+      cookies: './cookies.txt',
 
       preferInsecure: true,
       addHeaders: {
