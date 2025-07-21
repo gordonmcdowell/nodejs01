@@ -4,8 +4,7 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "prestart": "npm install -g yt-dlp && yt-dlp --update-to nightly"
+    "start": "node app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
