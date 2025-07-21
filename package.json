@@ -4,8 +4,7 @@
   "type": "module",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "prestart": "npm install --omit=dev yt-dlp"
+    "start": "node app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
