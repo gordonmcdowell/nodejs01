@@ -72,6 +72,7 @@ app.get('/stream', async (req, res) => {
       }
     });
     
+    console.log ('not an error yet how to simply report?:', stdout);
     const directUrl = stdout.trim();
     
     res.json({
