@@ -1,15 +1,12 @@
 // app.js
 
-if (process.env.YTDLP_COOKIES) {
-  fs.writeFileSync('./cookies.txt', process.env.YTDLP_COOKIES, 'utf-8');
-} else {
-  console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail.');
-}
 
 // Create cookies from Railway environment variable
 import fs from 'fs';
 if (process.env.YTDLP_COOKIES) {
   fs.writeFileSync('./cookies.txt', process.env.YTDLP_COOKIES, 'utf-8');
+} else {
+  console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail.');
 }
 
 import express from 'express';
