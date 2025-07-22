@@ -8,6 +8,7 @@ if (process.env.YTDLP_COOKIES) {
 } else {
   console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail.');
 }
+console.log('Cookies file contents:', fs.readFileSync('./cookies.txt', 'utf-8'));
 
 import express from 'express';
 import got from 'got';
