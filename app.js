@@ -6,7 +6,7 @@ import fs from 'fs';
 if (process.env.YTDLP_COOKIES) {
   fs.writeFileSync('./cookies.txt', process.env.YTDLP_COOKIES, 'utf-8');
 } else {
-  console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail.');
+  console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail. Huh.');
 }
 console.log('Cookies file contents:', fs.readFileSync('./cookies.txt', 'utf-8'));
 
