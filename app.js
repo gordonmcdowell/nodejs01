@@ -62,39 +62,44 @@ app.get('/stream', async (req, res) => {
     return res.status(400).send('❌ Missing required query parameter: ?url=');
   }
 
+  // Detect platform
+  let format, headers;
+  if (/youtube\.com|youtu\.be/.test(videoUrl)) {
+    format = '18';
+    headers = {
+      'User-Agent': 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
+      'X-YouTube-Client-Name': '55',
+      'X-YouTube-Client-Version': '1.0',
+      'Accept': '*/*',
+      'Origin': 'https://www.youtube.com'
+    };
+  } else if (/twitter\.com|x\.com/.test(videoUrl)) {
+    format = 'replay-2750'; // 720p, you can choose others from /formats output
+    headers = {
+      'User-Agent': 'Mozilla/5.0',
+      'Accept': '*/*',
+      'Origin': 'https://x.com'
+    };
+  } else {
+    return res.status(400).send('❌ Unsupported platform.');
+  }
+
   try {
-    // Use format ID 18 (360p MP4 with audio)
     const stdout = await ytdlp(videoUrl, {
-      format: '18',
+      format,
       getUrl: true,
-      addHeader: [
-        'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
-        'X-YouTube-Client-Name:55',
-        'X-YouTube-Client-Version:1.0'
-      ],
+      cookies: './cookies.txt',
       noCheckCertificates: true,
       noWarnings: true,
-      cookies: './cookies.txt',
-
       preferInsecure: true,
-      addHeaders: {
-        'Accept': '*/*',
-        'Origin': 'https://www.youtube.com',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-Mode': 'cors'
-      }
+      addHeader: Object.entries(headers).map(([k, v]) => `${k}:${v}`)
     });
-    
-    console.log ('not an error yet how to simply report?:', stdout);
+
     const directUrl = stdout.trim();
-    
+
     res.json({
       url: directUrl,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
-        'Accept': '*/*',
-        'Origin': 'https://www.youtube.com'
-      }
+      headers
     });
 
   } catch (err) {
