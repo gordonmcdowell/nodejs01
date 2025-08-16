@@ -74,7 +74,7 @@ app.get('/stream', async (req, res) => {
       'Origin': 'https://www.youtube.com'
     };
   } else if (/twitter\.com|x\.com/.test(videoUrl)) {
-    format = 'replay-2750'; // 720p, you can choose others from /formats output
+    format = 'best[protocol=m3u8]'; // auto-select best HLS stream for X/Twitter
     headers = {
       'User-Agent': 'Mozilla/5.0',
       'Accept': '*/*',
