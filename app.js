@@ -11,6 +11,8 @@ if (process.env.YTDLP_COOKIES) {
   console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail.');
 }
 const cookieOptions = fs.existsSync('./cookies.txt') ? { cookies: './cookies.txt' } : {};
+// Newer yt-dlp needs a JavaScript runtime to solve YouTube's challenges; node is already here.
+const runtimeOptions = { jsRuntimes: 'node', ...cookieOptions };
 
 import express from 'express';
 //import ytdlp from 'yt-dlp-exec'; // old way just to try compare
@@ -64,7 +66,7 @@ app.get('/formats', async (req, res) => {
 
   try {
     const stdout = await ytdlp(video.href, {
-      ...cookieOptions,
+      ...runtimeOptions,
       listFormats: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
@@ -121,7 +123,7 @@ app.get('/stream', async (req, res) => {
     const stdout = await ytdlp(video.href, {
       format,
       getUrl: true,
-      ...cookieOptions,
+      ...runtimeOptions,
       noCheckCertificates: true,
       noWarnings: true,
       preferInsecure: true,
