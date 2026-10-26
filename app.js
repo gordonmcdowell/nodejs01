@@ -5,19 +5,48 @@
 import fs from 'fs';
 if (process.env.YTDLP_COOKIES) {
   fs.writeFileSync('./cookies.txt', process.env.YTDLP_COOKIES, 'utf-8');
+  // Never log the contents: they are a logged-in YouTube session.
+  console.log(`Cookies file written (${process.env.YTDLP_COOKIES.length} bytes).`);
 } else {
-  console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail. Huh.');
+  console.warn('⚠️ YTDLP_COOKIES env var is not set! YouTube downloads may fail.');
 }
-console.log('Cookies file contents:', fs.readFileSync('./cookies.txt', 'utf-8'));
+const cookieOptions = fs.existsSync('./cookies.txt') ? { cookies: './cookies.txt' } : {};
 
 import express from 'express';
-import got from 'got';
 //import ytdlp from 'yt-dlp-exec'; // old way just to try compare
 import { create } from 'yt-dlp-exec'; // This one is local copy and newer
 
 const ytdlp = create('./yt-dlp'); // Use the local binary from prestart
 const app = express();
+app.disable('x-powered-by');
 const PORT = 3000; // hard‐code 3000 so Railway’s edge proxy lines up
+
+const YOUTUBE_HOSTS = ['youtube.com', 'youtu.be'];
+const X_HOSTS = ['x.com', 'twitter.com'];
+
+const hostMatches = (host, domains) =>
+  domains.some((d) => host === d || host.endsWith(`.${d}`));
+
+// Accept only a real http(s) URL on a supported host. The normalized href always
+// starts with "http", so yt-dlp can never read it as a command-line option.
+function parseVideoUrl(raw) {
+  if (typeof raw !== 'string' || raw.length > 2048) return null;
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+  if (url.username || url.password) return null;
+  const host = url.hostname.toLowerCase();
+  if (hostMatches(host, YOUTUBE_HOSTS)) return { href: url.href, platform: 'youtube' };
+  if (hostMatches(host, X_HOSTS)) return { href: url.href, platform: 'x' };
+  return null;
+}
+
+const escapeHtml = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 // Health check
 app.get('/', (_req, res) => {
@@ -25,14 +54,17 @@ app.get('/', (_req, res) => {
 });
 
 app.get('/formats', async (req, res) => {
-  const videoUrl = req.query.url;
-  if (!videoUrl) {
+  if (!req.query.url) {
     return res.status(400).send('❌ Missing required query parameter: ?url=');
+  }
+  const video = parseVideoUrl(req.query.url);
+  if (!video) {
+    return res.status(400).send('❌ Unsupported URL.');
   }
 
   try {
-    const stdout = await ytdlp(videoUrl, {
-      cookies: './cookies.txt',
+    const stdout = await ytdlp(video.href, {
+      ...cookieOptions,
       listFormats: true,
       addHeader: [
         'User-Agent:Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
@@ -49,22 +81,25 @@ app.get('/formats', async (req, res) => {
         'Sec-Fetch-Mode': 'cors'
       }
     });
-    res.send(`<pre>${stdout}</pre>`);
+    res.send(`<pre>${escapeHtml(stdout)}</pre>`);
   } catch (err) {
     console.error('Format list error:', err);
-    res.status(500).send(`❌ Failed to list formats: ${err.message}`);
+    res.status(500).send('❌ Failed to list formats.');
   }
 });
 
 app.get('/stream', async (req, res) => {
-  const videoUrl = req.query.url;
-  if (!videoUrl) {
+  if (!req.query.url) {
     return res.status(400).send('❌ Missing required query parameter: ?url=');
+  }
+  const video = parseVideoUrl(req.query.url);
+  if (!video) {
+    return res.status(400).send('❌ Unsupported platform.');
   }
 
   // Detect platform
   let format, headers;
-  if (/youtube\.com|youtu\.be/.test(videoUrl)) {
+  if (video.platform === 'youtube') {
     format = '18';
     headers = {
       'User-Agent': 'Mozilla/5.0 (Web0S; Linux/SmartTV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36',
@@ -73,22 +108,20 @@ app.get('/stream', async (req, res) => {
       'Accept': '*/*',
       'Origin': 'https://www.youtube.com'
     };
-  } else if (/twitter\.com|x\.com/.test(videoUrl)) {
+  } else {
     format = 'best[protocol=m3u8]'; // auto-select best HLS stream for X/Twitter
     headers = {
       'User-Agent': 'Mozilla/5.0',
       'Accept': '*/*',
       'Origin': 'https://x.com'
     };
-  } else {
-    return res.status(400).send('❌ Unsupported platform.');
   }
 
   try {
-    const stdout = await ytdlp(videoUrl, {
+    const stdout = await ytdlp(video.href, {
       format,
       getUrl: true,
-      cookies: './cookies.txt',
+      ...cookieOptions,
       noCheckCertificates: true,
       noWarnings: true,
       preferInsecure: true,
@@ -104,13 +137,13 @@ app.get('/stream', async (req, res) => {
 
   } catch (err) {
     console.error('Stream error:', err);
-    res.status(500).send(`❌ Failed to fetch video: ${err.message}`);
+    res.status(500).send('❌ Failed to fetch video.');
   }
 });
 
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
-  res.status(500).send(`❌ Internal error: ${err.message}`);
+  res.status(500).send('❌ Internal error.');
 });
 
 app.listen(PORT, () => {
